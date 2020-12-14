@@ -46,7 +46,8 @@ def read_and_merge(year):
 
     ivol = pd.read_csv('IVOL-BY-YEAR/{}.csv'.format(year), usecols=['PERMNO', 'CUSIP', 'year', 'month', 'year_month', 'IVOL'])
     merged_dataset = pd.merge(crsp_ffrench_d, ivol, how='inner', on=['PERMNO', 'CUSIP', 'year_month'])
-    merged_dataset['RET'] = pd.to_numeric(merged_dataset['RET'], errors='coerce').fillna(0)
+    for x in experiment_features:
+        merged_dataset[x] = pd.to_numeric(merged_dataset[x], errors='coerce').fillna(0)
     return merged_dataset
 
 
