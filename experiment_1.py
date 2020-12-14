@@ -26,6 +26,9 @@ experiment_end_year = 2019
 # Input columns from Merged dataset
 experiment_features = ['Mkt-RF', 'SMB', 'HML', 'RF', 'vwretx', 'VOL', 'RET']
 target_label = ['IVOL']
+# TODO recalculate these once IVOL dataset changed using get_IVOL_boundaries function
+min_ivol = 0.0001858190417677868
+max_ivol = 8.53472180221995
 
 
 def read_and_merge(year):
@@ -54,6 +57,21 @@ def inline_normalize(merged_dataset):
         # normalization_params[x]['std'] = X[x].std()
         # X[x] = (X[x] - normalization_params[x]['mean']) / normalization_params[x]['std']
         merged_dataset[x] = (merged_dataset[x] - normalization_params[x]['mean'])
+
+
+def get_IVOL_boundaries(start_year, end_year):
+    attribute_name = 'IVOL'
+    overall_min = float("inf")
+    overall_max = float("-inf")
+    for year in range(start_year, end_year + 1):
+        ivol = pd.read_csv('IVOL-BY-YEAR/{}.csv'.format(year), usecols=['PERMNO', 'CUSIP', 'year', 'month', 'year_month', 'IVOL'])
+        min_ = ivol[attribute_name].min()
+        max_ = ivol[attribute_name].max()
+        if min_ < overall_min:
+            overall_min = min_
+        if max_ > overall_max:
+            overall_max = max_
+    return overall_min, overall_max
 
 
 def get_train_data(start_year, end_year):
@@ -105,4 +123,6 @@ def main():
 
 
 if __name__ == '__main__':
+    # print(get_IVOL_boundaries(experiment_start_year, experiment_end_year))
     main()
+
