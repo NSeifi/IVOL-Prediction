@@ -21,6 +21,8 @@ from predictor import Predictor, device
 learning_momentum = 0.99
 lr = 0.005
 max_grad_norm = 1.0
+# batch size
+cumulate_loss = 16
 experiment_start_year = 2019
 experiment_end_year = 2019
 # Input columns from Merged dataset
@@ -103,10 +105,7 @@ def main():
     # Temporary variables for computing the average loss
     all_loss = 0.0
     all_count = 0
-    # batch size
-    cumulate_loss = 16
     # range from 1968 to 2019
-
     dt = tqdm(get_train_data(experiment_start_year, experiment_end_year + 1))
     optimizer.zero_grad()
     for X, Y in dt:
