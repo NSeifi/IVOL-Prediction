@@ -23,8 +23,10 @@ lr = 0.005
 max_grad_norm = 1.0
 # batch size
 cumulate_loss = 16
-experiment_start_year = 2019
-experiment_end_year = 2019
+experiment_test_start_year = 2019
+experiment_test_end_year = 2019
+experiment_train_start_year = 2018
+experiment_train_end_year = 2018
 # Input columns from Merged dataset
 experiment_features = ['Mkt-RF', 'SMB', 'HML', 'RF', 'vwretx', 'VOL', 'RET']
 target_label = ['IVOL']
@@ -77,7 +79,7 @@ def get_IVOL_boundaries(start_year, end_year):
     return overall_min, overall_max
 
 
-def get_train_data(start_year, end_year):
+def get_stock_data(start_year, end_year):
     """
     :param start_year: inclusive
     :param end_year: inclusive
@@ -110,7 +112,7 @@ def experiment_1():
     all_loss = 0.0
     all_count = 0
     # range from 1968 to 2019
-    dt = tqdm(get_train_data(experiment_start_year, experiment_end_year + 1))
+    dt = tqdm(get_stock_data(experiment_train_start_year, experiment_train_end_year))
     optimizer.zero_grad()
     for X, Y in dt:
         # Prediction
@@ -136,6 +138,15 @@ def categorize(Y):
         return torch.FloatTensor([0, 0, 1]).to(device)
 
 
+def convert_class_back_to_label(class_id):
+    if class_id == 0:
+        return "low"
+    elif class_id == 1:
+        return "medium"
+    else:
+        return "high"
+
+
 def experiment_2():
     """
     This experiment divides the range of calculated IVOLs to three categories of low, medium, and high
@@ -149,9 +160,10 @@ def experiment_2():
     all_loss = 0.0
     all_count = 0
     # range from 1968 to 2019
-    dt = tqdm(get_train_data(experiment_start_year, experiment_end_year + 1))
+    print("Training on data from {} to {}".format(experiment_train_start_year, experiment_train_end_year))
+    train = tqdm(get_stock_data(experiment_train_start_year, experiment_train_end_year))
     optimizer.zero_grad()
-    for X, Y in dt:
+    for X, Y in train:
         y_ct = categorize(Y)
         # Prediction
         _, loss = p(X, y_ct)
@@ -162,7 +174,30 @@ def experiment_2():
             nn.utils.clip_grad_norm_(p.parameters(), max_grad_norm)
             optimizer.step()
             optimizer.zero_grad()
-        dt.set_description("Average Loss: {:.2f}".format(all_loss / all_count))
+        train.set_description("Average Loss: {:.2f}".format(all_loss / all_count))
+    print("Testing on data from {} to {}".format(experiment_test_start_year, experiment_test_end_year))
+    test = tqdm(get_stock_data(experiment_test_start_year, experiment_test_end_year))
+    res = {"overall": {"correct": 0.0, "total": 0.0},
+           "low": {"correct": 0.0, "total": 0.0},
+           "medium": {"correct": 0.0, "total": 0.0},
+           "high": {"correct": 0.0, "total": 0.0}}
+    with torch.no_grad():
+        for X, Y in test:
+            y_ct = categorize(Y)
+            # Prediction
+            pred, loss = p(X, y_ct)
+            prediction_class = convert_class_back_to_label(pred.argmax().item())
+            actual_class = convert_class_back_to_label(y_ct.argmax().item())
+            res["overall"]["total"] += 1.0
+            res[actual_class]["total"] += 1.0
+            if prediction_class == actual_class:
+                res["overall"]["correct"] += 1.0
+                res[actual_class]["correct"] += 1.0
+    for key in res:
+        total = res[key]["total"]
+        correct = res[key]["correct"]
+        if total > 0.0:
+            print("{} prediction accuracy: {}% [{}/{}]".format(key, correct * 100 / total, correct, total))
 
 
 if __name__ == '__main__':
