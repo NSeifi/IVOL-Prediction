@@ -98,7 +98,10 @@ def get_train_data(start_year, end_year):
             yield X_tensor, Y
 
 
-def main():
+def experiment_1():
+    """
+     This experiment tries to predict the values of IVOL from the data by directly looking at the raw variables.
+    """
     # Instance from Predictor Class
     p = Predictor(len(experiment_features), 32, len(target_label), 1).to(device)
     # Stochastic Gradient Descent optimizer
@@ -122,7 +125,47 @@ def main():
         dt.set_description("Average Loss: {:.2f}".format(all_loss / all_count))
 
 
+def categorize(Y):
+    value = Y.item()
+    ivol_step = (max_ivol - min_ivol / 3.0)
+    if value < min_ivol + ivol_step:
+        return torch.FloatTensor([1, 0, 0]).to(device)
+    elif value < min_ivol + 2 * ivol_step:
+        return torch.FloatTensor([0, 1, 0]).to(device)
+    else:
+        return torch.FloatTensor([0, 0, 1]).to(device)
+
+
+def experiment_2():
+    """
+    This experiment divides the range of calculated IVOLs to three categories of low, medium, and high
+     and tries to predict those categories for unseen data.
+    """
+    # Instance from Predictor Class
+    p = Predictor(len(experiment_features), 32, len(target_label), 3).to(device)
+    # Stochastic Gradient Descent optimizer
+    optimizer = torch.optim.SGD(p.parameters(), lr=lr, momentum=learning_momentum)
+    # Temporary variables for computing the average loss
+    all_loss = 0.0
+    all_count = 0
+    # range from 1968 to 2019
+    dt = tqdm(get_train_data(experiment_start_year, experiment_end_year + 1))
+    optimizer.zero_grad()
+    for X, Y in dt:
+        y_ct = categorize(Y)
+        # Prediction
+        _, loss = p(X, y_ct)
+        all_loss += loss.item()
+        all_count += 1
+        loss.backward()
+        if all_count and all_count % cumulate_loss == 0:
+            nn.utils.clip_grad_norm_(p.parameters(), max_grad_norm)
+            optimizer.step()
+            optimizer.zero_grad()
+        dt.set_description("Average Loss: {:.2f}".format(all_loss / all_count))
+
+
 if __name__ == '__main__':
     # print(get_IVOL_boundaries(experiment_start_year, experiment_end_year))
-    main()
+    experiment_2()
 
