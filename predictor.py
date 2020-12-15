@@ -15,6 +15,11 @@ class Predictor(nn.Module):
         self.criterion = nn.MSELoss()
 
     def forward(self, input_tensor, target_tensor=None):
+        """
+        :param input_tensor: number of trade days * number of features
+        :param target_tensor: number of target classes for that specific month
+        :return: predicted classes for that month and the prediction loss value
+        """
         e = self.emb(input_tensor).unsqueeze(1)
         init_context = self.encoder_init(1)
         encoded, output_context = self.encoder(e, init_context)
