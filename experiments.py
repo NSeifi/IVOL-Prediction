@@ -147,7 +147,7 @@ def experiment_1():
 
 def categorize(Y):
     value = Y.item()
-    ivol_step = (max_ivol - min_ivol / 3.0)
+    ivol_step = (max_ivol - min_ivol / 10.0)
     if value < min_ivol + ivol_step:
         return torch.FloatTensor([1, 0, 0, 0, 0, 0, 0, 0, 0, 0]).to(device)
     elif value < min_ivol + 2 * ivol_step:
