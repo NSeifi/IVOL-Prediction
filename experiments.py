@@ -34,6 +34,9 @@ target_label = ['IVOL']
 min_ivol = 0.0001858190417677868
 max_ivol = 8.53472180221995
 
+min_RET = -0.965248
+max_RET = 0.9
+
 
 def read_and_merge(year):
     crsp_d = pd.read_csv('CRSP-DAILY-BY-YEAR/{}.csv'.format(year), usecols=[
@@ -78,6 +81,21 @@ def get_IVOL_boundaries(start_year, end_year):
             overall_max = max_
     return overall_min, overall_max
 
+
+def get_RET_boundaries(start_year, end_year):
+    attribute_name = 'RET'
+    overall_min = float("inf")
+    overall_max = float("-inf")
+    for year in range(start_year, end_year + 1):
+        ret = pd.read_csv('CRSP-DAILY-BY-YEAR/{}.csv'.format(year), usecols=['PERMNO', 'CUSIP' , 'RET'])
+        ret[attribute_name] = pd.to_numeric(ret[attribute_name], errors='coerce').fillna(0)
+        min_ = ret[attribute_name].astype(float).min()
+        max_ = ret[attribute_name].astype(float).max()
+        if min_ < overall_min:
+            overall_min = min_
+        if max_ > overall_max:
+            overall_max = max_
+    return overall_min, overall_max
 
 def get_stock_data(start_year, end_year):
     """
@@ -131,17 +149,31 @@ def categorize(Y):
     value = Y.item()
     ivol_step = (max_ivol - min_ivol / 3.0)
     if value < min_ivol + ivol_step:
-        return torch.FloatTensor([1, 0, 0]).to(device)
+        return torch.FloatTensor([1, 0, 0, 0, 0, 0, 0, 0, 0, 0]).to(device)
     elif value < min_ivol + 2 * ivol_step:
-        return torch.FloatTensor([0, 1, 0]).to(device)
+        return torch.FloatTensor([0, 1, 0, 0, 0, 0, 0, 0, 0, 0]).to(device)
+    elif value < min_ivol + 3 * ivol_step:
+        return torch.FloatTensor([0, 0, 1, 0, 0, 0, 0, 0, 0, 0]).to(device)
+    elif value < min_ivol + 4 * ivol_step:
+        return torch.FloatTensor([0, 0, 0, 1, 0, 0, 0, 0, 0, 0]).to(device)
+    elif value < min_ivol + 5 * ivol_step:
+        return torch.FloatTensor([0, 0, 0, 0, 1, 0, 0, 0, 0, 0]).to(device)
+    elif value < min_ivol + 6 * ivol_step:
+        return torch.FloatTensor([0, 0, 0, 0, 0, 1, 0, 0, 0, 0]).to(device)
+    elif value < min_ivol + 7 * ivol_step:
+        return torch.FloatTensor([0, 0, 0, 0, 0, 0, 1, 0, 0, 0]).to(device)
+    elif value < min_ivol + 8 * ivol_step:
+        return torch.FloatTensor([0, 0, 0, 0, 0, 0, 0, 1, 0, 0]).to(device)
+    elif value < min_ivol + 9 * ivol_step:
+        return torch.FloatTensor([0, 0, 0, 0, 0, 0, 0, 0, 1, 0]).to(device)
     else:
-        return torch.FloatTensor([0, 0, 1]).to(device)
+        return torch.FloatTensor([0, 0, 0, 0, 0, 0, 0, 0, 0, 1]).to(device)
 
 
 def convert_class_back_to_label(class_id):
     if class_id == 0:
         return "low"
-    elif class_id == 1:
+    elif class_id < 5:
         return "medium"
     else:
         return "high"
@@ -153,7 +185,7 @@ def experiment_2():
      and tries to predict those categories for unseen data.
     """
     # Instance from Predictor Class
-    p = Predictor(len(experiment_features), 32, len(target_label), 3).to(device)
+    p = Predictor(len(experiment_features), 32, len(target_label), 10).to(device)
     # Stochastic Gradient Descent optimizer
     optimizer = torch.optim.SGD(p.parameters(), lr=lr, momentum=learning_momentum)
     # Temporary variables for computing the average loss
@@ -201,6 +233,7 @@ def experiment_2():
 
 
 if __name__ == '__main__':
-    # print(get_IVOL_boundaries(experiment_start_year, experiment_end_year))
+    # print(get_IVOL_boundaries(experiment_train_start_year, experiment_train_end_year))
+    # print(get_RET_boundaries(experiment_train_start_year, experiment_train_end_year))
     experiment_2()
 
