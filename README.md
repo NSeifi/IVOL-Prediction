@@ -20,4 +20,4 @@ Preprocess/create_ivol.py
 Preprocess/ivol_split.py
 
 
-Then, run the experiment.py.
+Then, run experiment.py.
