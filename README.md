@@ -1,5 +1,5 @@
 # IVOL-Prediction
-******The commit is done using my husband's machine, so you see his name on top.*******
+******The commits are done using my husband's machine, so you see his name on top.*******
 
 To downlaod the CRSP DAILY stocks:
 https://wrds-web.wharton.upenn.edu/wrds/ds/crsp/stock_a/dsf.cfm?navId=128
